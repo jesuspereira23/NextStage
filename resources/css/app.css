@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../**/*.blade.php";
+@source "../**/*.js";
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer components {
+
+    .input-field {
+        @apply w-full border-b border-gray-300 py-2 bg-transparent
+               focus:outline-none focus:border-[#FF0073]
+               transition duration-300;
+    }
+
+    .input-error {
+        @apply border-[#FF0073];
+    }
+
+    .error-text {
+        @apply text-xs text-[#FF0073] mt-1;
+    }
+
+}
+
+
