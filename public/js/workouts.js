@@ -50,6 +50,7 @@ let deleteTarget = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     buildSportPicker();
+    buildSportFilters();
     fetchWorkouts();
     bindEvents();
 });
@@ -64,70 +65,154 @@ function bindEvents() {
     document.getElementById("btn-confirm-delete").onclick = confirmDelete;
     document.getElementById("btn-cancel-delete").onclick = () =>
         document.getElementById("delete-overlay").classList.add("hidden");
+
+    const btnEmptyNew = document.getElementById("btn-empty-new");
+    if (btnEmptyNew) btnEmptyNew.onclick = openCreateModal;
 }
 
 async function fetchWorkouts() {
-    document.getElementById("loading-state").classList.remove("hidden");
+    const loading = document.getElementById("loading-state");
+    if (loading) loading.classList.remove("hidden");
+
     try {
         const res = await fetch(API_WORKOUTS, { headers: authHeaders() });
+
+        if (!res.ok) {
+            console.error("Erro da API workouts:", res.status);
+            workouts = [];
+            renderGrid();
+            updateStats();
+            return;
+        }
+
         const data = await res.json();
-        workouts = data.data || data;
+        // Suporta { data: [...] } ou diretamente [...]
+        workouts = Array.isArray(data)
+            ? data
+            : Array.isArray(data.data)
+              ? data.data
+              : [];
+
         renderGrid();
         updateStats();
     } catch (e) {
-        console.error(e);
+        console.error("Falha ao buscar treinos:", e);
+        workouts = [];
+        renderGrid();
+        updateStats();
     } finally {
-        document.getElementById("loading-state").classList.add("hidden");
+        if (loading) loading.classList.add("hidden");
     }
 }
 
 function renderGrid() {
     const grid = document.getElementById("workouts-grid");
+    const empty = document.getElementById("empty-state");
+    if (!grid) return;
+
+    const data = Array.isArray(workouts) ? workouts : [];
     const filtered =
         currentFilter === "all"
-            ? workouts
-            : workouts.filter((w) => w.sport === currentFilter);
+            ? data
+            : data.filter((w) => w.sport === currentFilter);
 
-    grid.innerHTML = "";
-    grid.classList.toggle("hidden", filtered.length === 0);
-    document
-        .getElementById("empty-state")
-        .classList.toggle("hidden", filtered.length > 0);
+    if (!filtered.length) {
+        grid.classList.add("hidden");
+        if (empty) empty.classList.remove("hidden");
+        return;
+    }
 
-    filtered.forEach((w) => {
-        const card = document.createElement("div");
-        card.className =
-            "bg-[#0e0f14] border border-white/5 p-6 flex flex-col hover:border-[#CAFF00]/40 transition-all";
-        card.innerHTML = `
-                    <div class="mb-4 text-[#CAFF00]">${SPORTS.find((s) => s.value === w.sport)?.icon || ""}</div>
-                    <h3 class="font-black text-white text-lg uppercase mb-1">${w.title}</h3>
-                    <span class="text-[10px] text-[#555] uppercase font-bold tracking-widest mb-6">${w.sport}</span>
+    if (empty) empty.classList.add("hidden");
+    grid.classList.remove("hidden");
 
-                    <div class="flex items-center gap-4 pt-5 border-t border-white/5 mt-auto">
-                        <button onclick='openEditModal(${JSON.stringify(w)})' class="text-[#555] hover:text-[#CAFF00] text-[10px] font-black uppercase flex items-center gap-1 transition-colors">
-                            <i class="fas fa-edit"></i> EDITAR
-                        </button>
-                        <button onclick="openDeleteModal(${w.id})" class="text-[#555] hover:text-red-500 text-[10px] font-black uppercase flex items-center gap-1 transition-colors">
-                            <i class="fas fa-trash"></i> EXCLUIR
-                        </button>
-                    </div>
-                `;
-        grid.appendChild(card);
+    grid.innerHTML = filtered
+        .map(
+            (w) => `
+        <div class="bg-[#0e0f14] border border-white/5 p-6 flex flex-col gap-4 hover:border-white/10 transition-all">
+            <div class="flex justify-between items-start">
+                <div>
+                    <span class="text-[9px] font-bold tracking-[0.25em] uppercase text-[#CAFF00]">${w.sport_label ?? w.sport ?? "—"}</span>
+                    <h3 class="font-black text-white uppercase text-lg leading-tight mt-1">${w.title ?? "Sem título"}</h3>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick='openEditModal(${JSON.stringify(w)})' class="text-[#555] hover:text-white transition-colors p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                    <button onclick='openDeleteModal(${w.id})' class="text-[#555] hover:text-red-500 transition-colors p-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex gap-3 flex-wrap">
+                ${w.duration ? `<span class="text-[9px] font-bold uppercase tracking-widest text-[#555] border border-white/5 px-2 py-1">${w.duration} min</span>` : ""}
+                ${(w.difficulty_label ?? w.difficulty) ? `<span class="text-[9px] font-bold uppercase tracking-widest text-[#555] border border-white/5 px-2 py-1">${w.difficulty_label ?? w.difficulty}</span>` : ""}
+                ${w.exercises_count > 0 ? `<span class="text-[9px] font-bold uppercase tracking-widest text-[#555] border border-white/5 px-2 py-1">${w.exercises_count} exercício${w.exercises_count !== 1 ? "s" : ""}</span>` : ""}
+            </div>
+            ${
+                w.exercises?.length
+                    ? `<ul class="space-y-1 mt-1">
+                ${w.exercises
+                    .slice(0, 3)
+                    .map(
+                        (ex) =>
+                            `<li class="text-[11px] text-[#555] flex gap-2"><span class="text-[#333]">—</span>${ex.name}${ex.sets ? ` <span class="text-[#333]">${ex.sets}×${ex.reps ?? "?"}</span>` : ""}</li>`,
+                    )
+                    .join("")}
+                ${w.exercises.length > 3 ? `<li class="text-[10px] text-[#333]">+${w.exercises.length - 3} mais</li>` : ""}
+            </ul>`
+                    : ""
+            }
+        </div>
+    `,
+        )
+        .join("");
+}
+
+function buildSportFilters() {
+    const container = document.getElementById("sport-filters");
+    if (!container) return;
+
+    const allBtn = container.querySelector('[data-sport="all"]');
+    if (allBtn) {
+        allBtn.onclick = () => setFilter("all", allBtn, container);
+    }
+
+    SPORTS.forEach((s) => {
+        const btn = document.createElement("button");
+        btn.dataset.sport = s.value;
+        btn.className =
+            "sport-filter-btn font-black text-[10px] uppercase px-4 py-2 border border-white/10 text-[#555] hover:text-white hover:border-white/30 transition-all";
+        btn.textContent = s.label;
+        btn.onclick = () => setFilter(s.value, btn, container);
+        container.appendChild(btn);
     });
+}
+
+function setFilter(sport, activeBtn, container) {
+    currentFilter = sport;
+    container.querySelectorAll(".sport-filter-btn").forEach((b) => {
+        b.classList.remove("active-sport");
+        b.classList.add("text-[#555]");
+        b.classList.remove("text-[#CAFF00]");
+    });
+    activeBtn.classList.add("active-sport");
+    activeBtn.classList.remove("text-[#555]");
+    renderGrid();
 }
 
 window.openEditModal = (w) => {
     editingId = w.id;
     document.getElementById("modal-title").textContent = "EDITAR TREINO";
-    document.getElementById("field-title").value = w.title;
-    document.getElementById("field-duration").value = w.duration || "";
-    document.getElementById("field-difficulty").value = w.difficulty || "";
+    document.getElementById("field-title").value = w.title ?? "";
+    document.getElementById("field-duration").value = w.duration ?? "";
+    document.getElementById("field-difficulty").value =
+        w.difficulty ?? "iniciante";
     document
         .querySelectorAll(".sport-opt")
         .forEach((btn) =>
             btn.classList.toggle("active", btn.dataset.sport === w.sport),
         );
-    exerciseRows = (w.exercises || []).map((ex) => ({
+    exerciseRows = (w.exercises ?? []).map((ex) => ({
         ...ex,
         _key: Math.random(),
     }));
@@ -143,37 +228,82 @@ window.openDeleteModal = (id) => {
 };
 
 async function confirmDelete() {
-    await fetch(`${API_WORKOUTS}/${deleteTarget}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-    });
-    document
-        .getElementById("delete-overlay")
-        .classList.replace("flex", "hidden");
-    showToast("Removido!");
-    fetchWorkouts();
+    if (!deleteTarget) return;
+    try {
+        await fetch(`${API_WORKOUTS}/${deleteTarget}`, {
+            method: "DELETE",
+            headers: authHeaders(),
+        });
+        showToast("Treino removido!");
+        fetchWorkouts();
+    } catch (e) {
+        console.error(e);
+        showToast("Erro ao remover.");
+    } finally {
+        deleteTarget = null;
+        document
+            .getElementById("delete-overlay")
+            .classList.replace("flex", "hidden");
+    }
 }
 
 async function handleSubmit() {
+    const titleEl = document.getElementById("field-title");
+    const title = titleEl?.value?.trim();
+    if (!title) {
+        showToast("Informe o nome do treino.");
+        titleEl?.focus();
+        return;
+    }
+
     const sport = document.querySelector(".sport-opt.active")?.dataset.sport;
+    if (!sport) {
+        showToast("Selecione um esporte.");
+        return;
+    }
+
     const payload = {
-        title: document.getElementById("field-title").value,
-        sport: sport,
-        difficulty: document.getElementById("field-difficulty").value,
-        duration: document.getElementById("field-duration").value,
-        exercises: exerciseRows,
+        title,
+        sport,
+        difficulty: document.getElementById("field-difficulty")?.value ?? null,
+        duration: document.getElementById("field-duration")?.value
+            ? parseInt(document.getElementById("field-duration").value)
+            : null,
+        exercises: exerciseRows
+            .filter((r) => r.name?.trim())
+            .map(({ name, sets, reps, rest, notes, order }) => ({
+                name,
+                sets: sets || null,
+                reps: reps || null,
+                rest: rest || null,
+                notes: notes || null,
+                order: order ?? 0,
+            })),
     };
+
     const method = editingId ? "PUT" : "POST";
     const url = editingId ? `${API_WORKOUTS}/${editingId}` : API_WORKOUTS;
-    const res = await fetch(url, {
-        method,
-        headers: authHeaders(),
-        body: JSON.stringify(payload),
-    });
-    if (res.ok) {
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: authHeaders(),
+            body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.error("Erro ao salvar:", err);
+            showToast("Erro ao salvar. Verifique os campos.");
+            return;
+        }
+
         closeModal();
         fetchWorkouts();
-        showToast("Salvo!");
+        showToast(editingId ? "Treino atualizado!" : "Treino criado!");
+    } catch (e) {
+        console.error(e);
+        showToast("Erro de conexão.");
     }
 }
 
@@ -189,17 +319,27 @@ function addExerciseRow() {
 
 function renderExerciseRows() {
     const list = document.getElementById("exercises-list");
+    if (!list) return;
     list.innerHTML = exerciseRows
         .map(
             (row) => `
-                <div class="bg-white/5 border border-white/10 p-4 flex flex-col gap-2">
-                    <input type="text" placeholder="Nome" value="${row.name}" onchange="updateRow(${row._key}, 'name', this.value)" class="bg-transparent border-b border-white/10 text-xs p-1 outline-none">
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="number" placeholder="Sets" value="${row.sets}" onchange="updateRow(${row._key}, 'sets', this.value)" class="bg-transparent border-b border-white/10 text-xs p-1 outline-none">
-                        <input type="number" placeholder="Reps" value="${row.reps}" onchange="updateRow(${row._key}, 'reps', this.value)" class="bg-transparent border-b border-white/10 text-xs p-1 outline-none">
-                    </div>
-                </div>
-            `,
+        <div class="bg-white/5 border border-white/10 p-4 flex flex-col gap-2">
+            <div class="flex justify-between items-center">
+                <input type="text" placeholder="Nome do exercício" value="${row.name ?? ""}"
+                    onchange="updateRow(${row._key}, 'name', this.value)"
+                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none flex-1 text-white">
+                <button onclick="removeRow(${row._key})" class="text-[#555] hover:text-red-400 ml-3 text-xs">✕</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <input type="number" placeholder="Sets" value="${row.sets ?? ""}"
+                    onchange="updateRow(${row._key}, 'sets', this.value)"
+                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white">
+                <input type="number" placeholder="Reps" value="${row.reps ?? ""}"
+                    onchange="updateRow(${row._key}, 'reps', this.value)"
+                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white">
+            </div>
+        </div>
+    `,
         )
         .join("");
 }
@@ -209,24 +349,47 @@ window.updateRow = (key, field, val) => {
     if (r) r[field] = val;
 };
 
+window.removeRow = (key) => {
+    exerciseRows = exerciseRows.filter((x) => x._key !== key);
+    renderExerciseRows();
+};
+
 function buildSportPicker() {
     const picker = document.getElementById("sport-picker");
+    if (!picker) return;
     picker.innerHTML = SPORTS.map(
         (s) => `
-                <button type="button" data-sport="${s.value}" class="sport-opt flex flex-col items-center gap-2 p-3 border border-white/5 transition-all">
-                    ${s.icon} <span class="text-[8px] font-bold uppercase text-[#555]">${s.label}</span>
-                </button>
-            `,
+        <button type="button" data-sport="${s.value}" class="sport-opt flex flex-col items-center gap-2 p-3 border border-white/5 transition-all hover:border-white/20">
+            ${s.icon}
+            <span class="text-[8px] font-bold uppercase text-[#555]">${s.label}</span>
+        </button>
+    `,
     ).join("");
-    picker.querySelectorAll(".sport-opt").forEach(
-        (btn) =>
-            (btn.onclick = () => {
-                picker
-                    .querySelectorAll(".sport-opt")
-                    .forEach((b) => b.classList.remove("active"));
-                btn.classList.add("active");
-            }),
-    );
+    picker.querySelectorAll(".sport-opt").forEach((btn) => {
+        btn.onclick = () => {
+            picker
+                .querySelectorAll(".sport-opt")
+                .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+        };
+    });
+}
+
+function updateStats() {
+    const data = Array.isArray(workouts) ? workouts : [];
+    const statTotal = document.getElementById("stat-total");
+    const statEsportes = document.getElementById("stat-esportes");
+    const statExercises = document.getElementById("stat-exercises");
+    if (statTotal) statTotal.textContent = data.length;
+    if (statEsportes)
+        statEsportes.textContent = [
+            ...new Set(data.map((w) => w.sport)),
+        ].length;
+    if (statExercises)
+        statExercises.textContent = data.reduce(
+            (acc, w) => acc + (w.exercises_count ?? w.exercises?.length ?? 0),
+            0,
+        );
 }
 
 function showModal() {
@@ -234,34 +397,38 @@ function showModal() {
         .getElementById("modal-overlay")
         .classList.replace("hidden", "flex");
 }
+
 function closeModal() {
     document
         .getElementById("modal-overlay")
         .classList.replace("flex", "hidden");
-}
-
-function updateStats() {
-    document.getElementById("stat-total").textContent = workouts.length;
-    document.getElementById("stat-esportes").textContent = [
-        ...new Set(workouts.map((w) => w.sport)),
-    ].length;
-    document.getElementById("stat-exercises").textContent = workouts.reduce(
-        (acc, w) => acc + (w.exercises?.length || 0),
-        0,
-    );
-}
-
-function showToast(m) {
-    const t = document.getElementById("toast");
-    document.getElementById("toast-msg").textContent = m;
-    t.classList.replace("opacity-0", "opacity-100");
-    setTimeout(() => t.classList.replace("opacity-100", "opacity-0"), 3000);
+    editingId = null;
+    exerciseRows = [];
+    document.getElementById("modal-title").textContent = "NOVO TREINO";
+    document
+        .querySelectorAll(".sport-opt")
+        .forEach((b) => b.classList.remove("active"));
 }
 
 function openCreateModal() {
     editingId = null;
     document.getElementById("field-title").value = "";
+    document.getElementById("field-duration").value = "";
+    document.getElementById("field-difficulty").value = "iniciante";
     exerciseRows = [];
     renderExerciseRows();
+    document.getElementById("modal-title").textContent = "NOVO TREINO";
+    document
+        .querySelectorAll(".sport-opt")
+        .forEach((b) => b.classList.remove("active"));
     showModal();
+}
+
+function showToast(m) {
+    const t = document.getElementById("toast");
+    const msg = document.getElementById("toast-msg");
+    if (!t || !msg) return;
+    msg.textContent = m;
+    t.classList.replace("opacity-0", "opacity-100");
+    setTimeout(() => t.classList.replace("opacity-100", "opacity-0"), 3000);
 }

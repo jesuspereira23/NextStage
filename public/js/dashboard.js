@@ -12,7 +12,6 @@ const txt = (id, v) => {
     if (e) e.textContent = v;
 };
 
-/* ── Guard ── */
 function guard() {
     if (!localStorage.getItem("auth_token")) {
         window.location.href = "/login";
@@ -21,7 +20,6 @@ function guard() {
     return true;
 }
 
-/* ── Clock + Date ── */
 function startClock() {
     const tick = () => {
         const el = $("clock");
@@ -36,8 +34,7 @@ function startClock() {
 
     const dateEl = $("dateLabel");
     if (dateEl) {
-        const now = new Date();
-        dateEl.textContent = now
+        dateEl.textContent = new Date()
             .toLocaleDateString("pt-BR", {
                 weekday: "short",
                 day: "numeric",
@@ -47,7 +44,6 @@ function startClock() {
     }
 }
 
-/* ── User ── */
 async function loadUser() {
     try {
         const r = await fetch("/api/me", { headers: hdrs() });
@@ -63,18 +59,25 @@ async function loadUser() {
     } catch {}
 }
 
-/* ── Workouts ── */
 async function loadWorkouts() {
     try {
         const r = await fetch("/api/workouts", { headers: hdrs() });
         if (!r.ok) return;
-        const list = await r.json();
+
+        const raw = await r.json();
+        const list = Array.isArray(raw)
+            ? raw
+            : Array.isArray(raw.data)
+              ? raw.data
+              : [];
+
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         txt(
             "statWorkouts",
             list.filter((w) => new Date(w.created_at) > weekAgo).length,
         );
+
         if (list.length > 0) {
             const latest = list[0];
             txt("workoutTitle", latest.title ?? "Treino do dia");
@@ -82,7 +85,7 @@ async function loadWorkouts() {
                 "workoutMeta",
                 [
                     latest.duration ? latest.duration + " min" : null,
-                    latest.difficulty ?? null,
+                    latest.difficulty_label ?? latest.difficulty ?? null,
                 ]
                     .filter(Boolean)
                     .join(" · ") || "Pronto para começar",
@@ -94,21 +97,28 @@ async function loadWorkouts() {
             }
         }
     } catch (e) {
-        console.error(e);
+        console.error("loadWorkouts:", e);
     }
 }
 
-/* ── Objectives ── */
 async function loadObjectives() {
     const el = $("objectivesList");
+    if (!el) return;
     try {
         const r = await fetch("/api/objectives", { headers: hdrs() });
         if (!r.ok) {
             el.innerHTML = emptyState("Nenhum objetivo ainda");
             return;
         }
-        const list = await r.json();
+        const raw = await r.json();
+        const list = Array.isArray(raw)
+            ? raw
+            : Array.isArray(raw.data)
+              ? raw.data
+              : [];
+
         txt("statObjectives", list.filter((o) => !o.completed).length);
+
         if (!list.length) {
             el.innerHTML = emptyState("Nenhum objetivo ainda");
             return;
@@ -129,26 +139,33 @@ async function loadObjectives() {
             )
             .join("");
     } catch {
-        el.innerHTML = emptyState("Erro ao carregar");
+        if (el) el.innerHTML = emptyState("Erro ao carregar");
     }
 }
 
-/* ── Evolution ── */
 async function loadEvolution() {
     const el = $("evolutionContent");
+    if (!el) return;
     try {
         const r = await fetch("/api/evolution-logs", { headers: hdrs() });
         if (!r.ok) {
             el.innerHTML = emptyState("Nenhum registro ainda");
             return;
         }
-        const list = await r.json();
+        const raw = await r.json();
+        const list = Array.isArray(raw)
+            ? raw
+            : Array.isArray(raw.data)
+              ? raw.data
+              : [];
+
         txt("statLogs", list.length);
+
         if (!list.length) {
             el.innerHTML = emptyState("Nenhum registro ainda");
             return;
         }
-        const latest = list.sort(
+        const latest = [...list].sort(
             (a, b) => new Date(b.created_at) - new Date(a.created_at),
         )[0];
         el.innerHTML = `
@@ -159,16 +176,14 @@ async function loadEvolution() {
             ${latest.performance_note ? `<div class="bg-[#1F1F1F] border border-white/[.05] rounded-xl p-3.5"><p class="text-[10px] text-[#CAFF00] font-bold uppercase tracking-widest mb-1">Nota</p><p class="text-xs text-zinc-400 leading-relaxed italic">${latest.performance_note}</p></div>` : ""}
             <p class="text-[10px] text-zinc-600 text-right mt-2">${list.length} registro${list.length !== 1 ? "s" : ""} total</p>`;
     } catch {
-        el.innerHTML = emptyState("Erro ao carregar");
+        if (el) el.innerHTML = emptyState("Erro ao carregar");
     }
 }
 
-/* ── Helpers ── */
 function emptyState(msg) {
     return `<div class="flex flex-col items-center justify-center py-6 text-zinc-600"><svg class="w-7 h-7 mb-2 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg><p class="text-xs">${msg}</p></div>`;
 }
 
-/* ── Boot ── */
 document.addEventListener("DOMContentLoaded", () => {
     if (!guard()) return;
     startClock();

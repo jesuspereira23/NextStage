@@ -3,49 +3,74 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvolutionLog;
-use App\Http\Requests\StoreEvolutionLogRequest;
-use App\Http\Requests\UpdateEvolutionLogRequest;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use App\Http\Resources\EvolutionLogResource;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class EvolutionLogController extends Controller
 {
-    use AuthorizesRequests;
-
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
-        $logs = request()->user()->evolutionLogs()->orderBy('created_at', 'desc')->get();
+        $logs = EvolutionLog::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return EvolutionLogResource::collection($logs);
     }
 
-    public function store(StoreEvolutionLogRequest $request)
+    public function store(Request $request): JsonResponse
     {
-        $validated = $request->validated();
-        $validated['user_id'] = $request->user()->id;
-        $log = EvolutionLog::create($validated);
+        $data = $request->validate([
+            'weight'           => ['nullable', 'numeric', 'min:0'],
+            'body_fat'         => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'performance_note' => ['nullable', 'string', 'max:1000'],
+        ]);
 
-        return (new EvolutionLogResource($log))->response()->setStatusCode(201);
+        $log = EvolutionLog::create([
+            'user_id'          => auth()->id(),
+            'weight'           => $data['weight']           ?? null,
+            'body_fat'         => $data['body_fat']         ?? null,
+            'performance_note' => $data['performance_note'] ?? null,
+        ]);
+
+        return (new EvolutionLogResource($log))
+            ->response()
+            ->setStatusCode(201);
     }
 
-    public function show(EvolutionLog $evolutionLog)
+    public function show(EvolutionLog $evolutionLog): EvolutionLogResource
     {
-        $this->authorize('view', $evolutionLog);
+        $this->checkOwner($evolutionLog);
         return new EvolutionLogResource($evolutionLog);
     }
 
-    public function update(UpdateEvolutionLogRequest $request, EvolutionLog $evolutionLog)
+    public function update(Request $request, EvolutionLog $evolutionLog): EvolutionLogResource
     {
-        $this->authorize('update', $evolutionLog);
-        $evolutionLog->update($request->validated());
+        $this->checkOwner($evolutionLog);
 
-        return new EvolutionLogResource($evolutionLog);
+        $data = $request->validate([
+            'weight'           => ['nullable', 'numeric', 'min:0'],
+            'body_fat'         => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'performance_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $evolutionLog->update($data);
+
+        return new EvolutionLogResource($evolutionLog->fresh());
     }
 
-    public function destroy(EvolutionLog $evolutionLog)
+    public function destroy(EvolutionLog $evolutionLog): JsonResponse
     {
-        $this->authorize('delete', $evolutionLog);
+        $this->checkOwner($evolutionLog);
         $evolutionLog->delete();
+        return response()->json(null, 204);
+    }
 
-        return response()->noContent();
+    private function checkOwner(EvolutionLog $evolutionLog): void
+    {
+        if ($evolutionLog->user_id !== auth()->id()) {
+            abort(403, 'Ação não autorizada.');
+        }
     }
 }

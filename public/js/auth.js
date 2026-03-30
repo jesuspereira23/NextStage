@@ -20,7 +20,7 @@ const Auth = {
 
     logout: async () => {
         try {
-         calcu   await fetch("/api/logout", {
+            await fetch("/api/logout", {
                 method: "POST",
                 headers: Auth.headers(),
             });
