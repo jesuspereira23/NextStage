@@ -206,7 +206,7 @@
             </p>
             <!-- buttons -->
             <div class="sr flex flex-wrap gap-4 mb-16" style="transition-delay:.45s">
-                <a href="#"
+                <a href="/login"
                     class="inline-flex items-center gap-2 bg-[#CAFF00] text-black font-black text-[13px] tracking-[0.15em] uppercase px-10 py-[18px] rounded-[3px] no-underline hover:shadow-[0_0_36px_rgba(202,255,0,0.4)] hover:-translate-y-1 transition-all">
                     MONTAR MEU PLANO <i class="fas fa-chevron-right text-[11px]"></i>
                 </a>
