@@ -88,7 +88,7 @@
         </div>
 
         <div id="modal-overlay"
-            class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] hidden items-center justify-center p-4">
+            class="fixed inset-0 bg-black/70 backdrop-blur-md z-[100] hidden items-center justify-center p-4">
             <div id="modal-box"
                 class="bg-[#0e0f14] border border-white/10 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-8">
                 <div class="flex justify-between items-center mb-8">
