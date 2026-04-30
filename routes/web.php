@@ -1,12 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\AuthController;
 Route::get('/', fn() => view('index'));
 
 Route::get('/login',    fn() => view('auth.login'))->name('login');
 Route::get('/register', fn() => view('auth.register'))->name('register');
 Route::get('/profile', fn() => view('profile.index'))->name('profile.index');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 Route::get('/workouts',       fn() => view('workouts.index'))->name('workouts.index');

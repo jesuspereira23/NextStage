@@ -60,7 +60,16 @@
                         </div>
                     </div>
 
-                    <div id="errorMsg" class="hidden text-red-500 text-xs text-center font-bold"></div>
+                    <div id="errorMsg" class="hidden mb-6">
+                        <div class="bg-red-500/10 border border-red-500/50 p-4 rounded-xl">
+                            <div class="flex items-center gap-3 mb-2">
+                                <i class="fas fa-exclamation-circle text-red-500"></i>
+                                <span class="text-red-500 font-black uppercase italic text-xs tracking-widest">Erro de Acesso</span>
+                            </div>
+                            <ul id="errorList" class="text-red-400 text-xs space-y-1 list-none">
+                                </ul>
+                        </div>
+                    </div>
 
                     <button type="submit"
                         class="w-full text-black font-black py-5 rounded-xl transition-all transform hover:-translate-y-1 active:scale-[0.98] uppercase italic flex items-center justify-center gap-3"
@@ -81,59 +90,79 @@
     </div>
 
     <script>
-        // Toggle senha
-        const tog = document.getElementById('togglePwd');
-        const pw = document.getElementById('passwordInput');
-        const eye = document.getElementById('eyeIcon');
-        tog.addEventListener('click', () => {
-            const show = pw.type === 'password';
-            pw.type = show ? 'text' : 'password';
-            eye.className = show ? 'fas fa-eye-slash text-sm' : 'fas fa-eye text-sm';
-        });
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const errEl = document.getElementById('errorMsg');
+        const errorList = document.getElementById('errorList');
+        const btnTxt = document.getElementById('btnText');
+        const btnIco = document.getElementById('btnIcon');
+        const emailInput = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
 
-        // Se já logado, vai direto pro dashboard
-        if (localStorage.getItem('auth_token')) {
-            window.location.href = '/dashboard';
+        // 1. Limpa erros anteriores e inicia animação de loading
+        errEl.classList.add('hidden');
+        errorList.innerHTML = '';
+        btnTxt.innerText = 'Verificando...';
+        btnIco.className = 'fas fa-spinner fa-spin';
+
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    email: emailInput.value,
+                    password: passwordInput.value
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // Sucesso!
+                localStorage.setItem('auth_token', data.token);
+                window.location.href = '/dashboard';
+            } else {
+                // 2. TRATAMENTO DE ERROS (TODOS OS TIPOS)
+                
+                if (data.errors) {
+                    // Erros de Validação (Email repetido, senha curta, campo vazio, etc)
+                    Object.keys(data.errors).forEach(campo => {
+                        data.errors[campo].forEach(msg => {
+                            adicionarErroNaLista(msg);
+                        });
+                    });
+                } else if (data.message) {
+                    // Erros de Regra de Negócio (Senha incorreta, conta bloqueada, etc)
+                    adicionarErroNaLista(data.message);
+                } else {
+                    // Erro genérico desconhecido
+                    adicionarErroNaLista('Ocorreu um erro inesperado. Tente novamente.');
+                }
+                
+                errEl.classList.remove('hidden');
+            }
+        } catch (error) {
+            // Erros de Rede (Internet caída, servidor desligado, erro de Driver)
+            adicionarErroNaLista('Falha na conexão com o servidor. Verifique sua internet.');
+            errEl.classList.remove('hidden');
+        } finally {
+            btnTxt.innerText = 'Entrar no Sistema';
+            btnIco.className = 'fas fa-arrow-right';
         }
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const errEl = document.getElementById('errorMsg');
-            const btnTxt = document.getElementById('btnText');
-            const btnIco = document.getElementById('btnIcon');
-            errEl.classList.add('hidden');
-            btnTxt.innerText = 'Autenticando...';
-            btnIco.className = 'fas fa-spinner fa-spin';
-
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        email: document.getElementById('emailInput').value,
-                        password: pw.value
-                    })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    localStorage.setItem('auth_token', data.token);
-                    window.location.href = '/dashboard';
-                } else {
-                    errEl.innerText = data.message || 'E-mail ou senha incorretos.';
-                    errEl.classList.remove('hidden');
-                }
-            } catch {
-                errEl.innerText = 'Erro de conexão.';
-                errEl.classList.remove('hidden');
-            } finally {
-                btnTxt.innerText = 'Entrar no Sistema';
-                btnIco.className = 'fas fa-arrow-right';
-            }
-        });
+        // Função auxiliar para criar as linhas de erro
+        function adicionarErroNaLista(texto) {
+            const li = document.createElement('li');
+            li.className = 'flex items-center gap-2';
+            li.innerHTML = `<i class="fas fa-caret-right text-[8px]"></i> <span>${texto}</span>`;
+            errorList.appendChild(li);
+        }
+    });
     </script>
 </body>
 

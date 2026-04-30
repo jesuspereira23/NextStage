@@ -20,6 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         return '/login';
     });
+    $middleware->redirectTo(
+            guests: '/login',
+            users: '/dashboard'
+    );
 })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -66,13 +66,27 @@ class AuthController extends Controller
         ]);
     }
 
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // 1. Verifica se existe um token (API) e deleta
+        if ($request->user() && method_exists($request->user(), 'currentAccessToken')) {
+            $token = $request->user()->currentAccessToken();
+            if ($token) { $token->delete(); }
+        }
 
-        return response()->json([
-            'message' => 'Deslogado.'
-        ]);
+        // 2. Faz o logout da sessão (Web)
+        auth()->guard('web')->logout();
+
+        // 3. Invalida a sessão e gera um novo token CSRF por segurança
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // 4. Verifica se a requisição espera JSON (API) ou é do navegador (Web)
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Deslogado com sucesso.']);
+        }
+
+        return redirect('/');
     }
 
     public function me(Request $request): JsonResponse

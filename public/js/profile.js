@@ -1,105 +1,119 @@
+document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- FUNÇÃO PARA EXIBIR MENSAGENS (TOAST) ---
+    const showMessage = (message, isError = false) => {
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toast-msg');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastContainer = toast.querySelector('div');
 
-    document.addEventListener("DOMContentLoaded", () => {
-
-      /* ── Editar info ── */
-      document.getElementById("btn-edit-info")?.addEventListener("click", () => {
-        document.getElementById("info-view").classList.add("hidden");
-        document.getElementById("info-form").classList.remove("hidden");
-      });
-      document.getElementById("btn-cancel-info")?.addEventListener("click", () => {
-        document.getElementById("info-view").classList.remove("hidden");
-        document.getElementById("info-form").classList.add("hidden");
-      });
-
-      /* ── Editar senha ── */
-      document.getElementById("btn-edit-password")?.addEventListener("click", () => {
-        document.getElementById("password-view").classList.add("hidden");
-        document.getElementById("password-form").classList.remove("hidden");
-      });
-      document.getElementById("btn-cancel-password")?.addEventListener("click", () => {
-        document.getElementById("password-view").classList.remove("hidden");
-        document.getElementById("password-form").classList.add("hidden");
-      });
-
-      /* ── Btn editar perfil (hero) ── */
-      document.getElementById("btn-edit-profile")?.addEventListener("click", () => {
-        document.getElementById("info-view").classList.add("hidden");
-        document.getElementById("info-form").classList.remove("hidden");
-        document.getElementById("info-form").scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-
-      /* ── Modal excluir conta ── */
-      document.getElementById("btn-delete-account")?.addEventListener("click", () => {
-        const overlay = document.getElementById("delete-account-overlay");
-        overlay.classList.remove("hidden");
-        overlay.classList.add("flex");
-      });
-      document.getElementById("btn-cancel-delete-account")?.addEventListener("click", () => {
-        const overlay = document.getElementById("delete-account-overlay");
-        overlay.classList.add("hidden");
-        overlay.classList.remove("flex");
-      });
-
-      /* ── Stats via API ── */
-      async function loadStats() {
-        const token = window.Auth?.getToken() ?? localStorage.getItem("auth_token") ?? "";
-        const h = {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content ?? "",
-        };
-        try {
-          const [exRes, wkRes, obRes] = await Promise.all([
-            fetch("/api/exercises", { headers: h }),
-            fetch("/api/workouts", { headers: h }),
-            fetch("/api/objectives", { headers: h }),
-          ]);
-          const [exJson, wkJson, obJson] = await Promise.all([
-            exRes.json(), wkRes.json(), obRes.json()
-          ]);
-          const exCount = (exJson.data ?? exJson).length ?? 0;
-          const wkCount = (wkJson.data ?? wkJson).length ?? 0;
-          const obList = obJson.data ?? obJson;
-          const total = obList.length;
-          const done = obList.filter(o => o.completed).length;
-          const pct = total ? Math.round((done / total) * 100) : 0;
-
-          document.getElementById("stat-exercises").textContent = exCount;
-          document.getElementById("stat-workouts").textContent = wkCount;
-          document.getElementById("stat-objectives").textContent = total;
-          document.getElementById("stat-done").textContent = pct + "%";
-          document.getElementById("pct-objectives").textContent = pct + "%";
-
-          setTimeout(() => {
-            document.getElementById("bar-objectives").style.width = pct + "%";
-          }, 300);
-        } catch (e) {
-          console.error("Erro ao carregar stats:", e);
+        // Configura as cores e ícones baseados no tipo (Erro ou Sucesso)
+        if (isError) {
+            toastContainer.classList.replace('border-[#CAFF00]', 'border-red-500');
+            toastIcon.className = 'fas fa-exclamation-triangle text-red-500 text-sm';
+            toastMsg.classList.replace('text-white', 'text-red-500');
+        } else {
+            toastContainer.classList.replace('border-red-500', 'border-[#CAFF00]');
+            toastIcon.className = 'fas fa-check text-[#CAFF00] text-sm';
+            toastMsg.classList.replace('text-red-500', 'text-white');
         }
-      }
 
-      loadStats();
+        toastMsg.innerText = message.toUpperCase();
+        
+        // Animação de entrada
+        toast.classList.remove('opacity-0', 'translate-y-6', 'pointer-events-none');
+        toast.classList.add('opacity-100', 'translate-y-0');
 
-      /* ── Flash messages ── */
-      @if(session('success'))
-        showToast("{{ session('success') }}", "success");
-      @endif
-      @if(session('error'))
-        showToast("{{ session('error') }}", "error");
-      @endif
-  });
+        // Auto-hide após 4 segundos
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-6', 'pointer-events-none');
+            toast.classList.remove('opacity-100', 'translate-y-0');
+        }, 4000);
+    };
 
-    function showToast(msg, type = "success") {
-      const toast = document.getElementById("toast");
-      const icon = document.getElementById("toast-icon");
-      const label = document.getElementById("toast-msg");
-      if (!toast) return;
-      icon.className = type === "error" ? "fas fa-exclamation-circle text-red-400 text-sm" : "fas fa-check text-[#CAFF00] text-sm";
-      label.textContent = msg;
-      toast.classList.remove("translate-y-6", "opacity-0");
-      toast.classList.add("translate-y-0", "opacity-100");
-      setTimeout(() => {
-        toast.classList.add("translate-y-6", "opacity-0");
-        toast.classList.remove("translate-y-0", "opacity-100");
-      }, 3500);
-    }
+    // --- LÓGICA DE ENVIO DE FORMULÁRIOS (AJAX) ---
+    const handleAjaxForm = (formId, successMessage) => {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            
+            // Loading state
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'PROCESSANDO...';
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST', // Laravel usa POST com _method PUT/DELETE
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: new FormData(form)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(successMessage);
+                    // Opcional: Recarregar a página após sucesso para atualizar os nomes na tela
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    // TRATAMENTO UNIVERSAL DE ERROS
+                    if (data.errors) {
+                        // Pega a primeira mensagem de erro de validação (ex: "Senha muito curta")
+                        const firstKey = Object.keys(data.errors)[0];
+                        showMessage(data.errors[firstKey][0], true);
+                    } else {
+                        // Erros gerais (ex: "Senha atual incorreta")
+                        showMessage(data.message || 'Erro ao processar solicitação', true);
+                    }
+                }
+            } catch (error) {
+                showMessage('Falha na conexão com o servidor', true);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+            }
+        });
+    };
+
+    // Inicializa os formulários
+    handleAjaxForm('info-form', 'Dados atualizados com sucesso!');
+    handleAjaxForm('password-form', 'Senha alterada com sucesso!');
+
+    // --- CONTROLES DE INTERFACE (BOTÕES EDITAR/CANCELAR) ---
+    
+    // Dados da Conta
+    document.getElementById('btn-edit-info')?.addEventListener('click', () => {
+        document.getElementById('info-view').classList.add('hidden');
+        document.getElementById('info-form').classList.remove('hidden');
+    });
+    document.getElementById('btn-cancel-info')?.addEventListener('click', () => {
+        document.getElementById('info-form').classList.add('hidden');
+        document.getElementById('info-view').classList.remove('hidden');
+    });
+
+    // Segurança
+    document.getElementById('btn-edit-password')?.addEventListener('click', () => {
+        document.getElementById('password-view').classList.add('hidden');
+        document.getElementById('password-form').classList.remove('hidden');
+    });
+    document.getElementById('btn-cancel-password')?.addEventListener('click', () => {
+        document.getElementById('password-form').classList.add('hidden');
+        document.getElementById('password-view').classList.remove('hidden');
+    });
+
+    // --- MODAL DE EXCLUSÃO ---
+    const deleteOverlay = document.getElementById('delete-account-overlay');
+    document.getElementById('btn-delete-account')?.addEventListener('click', () => {
+        deleteOverlay.classList.replace('hidden', 'flex');
+    });
+    document.getElementById('btn-cancel-delete-account')?.addEventListener('click', () => {
+        deleteOverlay.classList.replace('flex', 'hidden');
+    });
+});
