@@ -131,7 +131,7 @@
 
     {{-- ─── Modal Criar / Editar ──────────────────────────────── --}}
     {{-- IMPORTANTE: modal-box NÃO tem opacity-0 nem scale-95 — o JS controla a visibilidade --}}
-    <div id="modal-overlay" class="fixed inset-0 bg-black/95 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div id="modal-overlay" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden items-center justify-center p-4">
         <div id="modal-box"
             class="bg-[#0e0f14] border border-white/10 w-full max-w-xl relative shadow-[0_0_80px_rgba(0,0,0,0.6)]">
 

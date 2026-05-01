@@ -64,10 +64,11 @@
                         <div class="bg-red-500/10 border border-red-500/50 p-4 rounded-xl">
                             <div class="flex items-center gap-3 mb-2">
                                 <i class="fas fa-exclamation-circle text-red-500"></i>
-                                <span class="text-red-500 font-black uppercase italic text-xs tracking-widest">Erro de Acesso</span>
+                                <span id="errorTitle" class="text-red-500 font-black uppercase italic text-xs tracking-widest">
+                                    Erro de Acesso
+                                </span>
                             </div>
-                            <ul id="errorList" class="text-red-400 text-xs space-y-1 list-none">
-                                </ul>
+                            <ul id="errorList" class="text-red-400 text-xs space-y-1 list-none"></ul>
                         </div>
                     </div>
 
@@ -90,9 +91,27 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    // Dicionário de traduções
+    const mensagensTraduzidas = {
+        "The email field is required.": "O campo de e-mail é obrigatório.",
+        "The password field is required.": "O campo de senha é obrigatório.",
+        "The email must be a valid email address.": "Digite um e-mail válido.",
+        "Invalid credentials.": "E-mail ou senha incorretos.",
+        "These credentials do not match our records.": "Credenciais não encontradas no sistema.",
+        "Your account has been disabled.": "Sua conta foi desativada. Entre em contato com o suporte.",
+        "Too many login attempts. Please try again later.": "Muitas tentativas de login. Tente novamente mais tarde.",
+        "Unauthorized.": "Acesso não autorizado.",
+        "Forbidden.": "Você não tem permissão para acessar esta área.",
+        "Server error.": "Erro interno no servidor."
+    };
+
+    function traduzirMensagem(msg) {
+        return mensagensTraduzidas[msg] || msg;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const errEl = document.getElementById('errorMsg');
         const errorList = document.getElementById('errorList');
         const btnTxt = document.getElementById('btnText');
@@ -100,7 +119,7 @@
         const emailInput = document.getElementById('emailInput');
         const passwordInput = document.getElementById('passwordInput');
 
-        // 1. Limpa erros anteriores e inicia animação de loading
+        // Reset
         errEl.classList.add('hidden');
         errorList.innerHTML = '';
         btnTxt.innerText = 'Verificando...';
@@ -123,31 +142,23 @@
             const data = await res.json();
 
             if (res.ok) {
-                // Sucesso!
                 localStorage.setItem('auth_token', data.token);
                 window.location.href = '/dashboard';
             } else {
-                // 2. TRATAMENTO DE ERROS (TODOS OS TIPOS)
-                
                 if (data.errors) {
-                    // Erros de Validação (Email repetido, senha curta, campo vazio, etc)
                     Object.keys(data.errors).forEach(campo => {
                         data.errors[campo].forEach(msg => {
-                            adicionarErroNaLista(msg);
+                            adicionarErroNaLista(traduzirMensagem(msg));
                         });
                     });
                 } else if (data.message) {
-                    // Erros de Regra de Negócio (Senha incorreta, conta bloqueada, etc)
-                    adicionarErroNaLista(data.message);
+                    adicionarErroNaLista(traduzirMensagem(data.message));
                 } else {
-                    // Erro genérico desconhecido
                     adicionarErroNaLista('Ocorreu um erro inesperado. Tente novamente.');
                 }
-                
                 errEl.classList.remove('hidden');
             }
-        } catch (error) {
-            // Erros de Rede (Internet caída, servidor desligado, erro de Driver)
+        } catch {
             adicionarErroNaLista('Falha na conexão com o servidor. Verifique sua internet.');
             errEl.classList.remove('hidden');
         } finally {
@@ -155,7 +166,7 @@
             btnIco.className = 'fas fa-arrow-right';
         }
 
-        // Função auxiliar para criar as linhas de erro
+        // Função auxiliar
         function adicionarErroNaLista(texto) {
             const li = document.createElement('li');
             li.className = 'flex items-center gap-2';

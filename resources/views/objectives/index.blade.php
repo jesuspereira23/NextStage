@@ -90,7 +90,7 @@
         </div>
 
         <div id="modal-overlay"
-            class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+            class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden items-center justify-center p-4">
             <div class="bg-[#0e0f14] border border-[#CAFF00]/20 w-full max-w-md p-8 shadow-2xl">
                 <h2 id="modal-title" class="font-['Barlow_Condensed'] font-black text-2xl text-white uppercase mb-6">NOVO
                     OBJETIVO</h2>
@@ -107,24 +107,32 @@
                             class="w-full bg-white/5 border border-white/10 p-3 text-white outline-none focus:border-[#CAFF00]"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
+                        <div class="relative">
                             <label class="text-[10px] text-[#CAFF00] font-bold uppercase block mb-1">Categoria</label>
                             <select id="field-category"
-                                class="w-full bg-white/5 border border-white/10 p-3 text-white outline-none">
+                                class="w-full bg-[#0e0f14] border border-white/10 p-3 text-white outline-none focus:border-[#CAFF00] rounded-md appearance-none">
                                 <option value="treino">🏋️ Treino</option>
                                 <option value="nutricao">🥗 Nutrição</option>
                                 <option value="mental">🧠 Mental</option>
                                 <option value="outro">🎯 Outro</option>
                             </select>
+                            <!-- Ícone seta -->
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#CAFF00]">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
                         </div>
-                        <div>
+                        <div class="relative">
                             <label class="text-[10px] text-[#CAFF00] font-bold uppercase block mb-1">Prioridade</label>
                             <select id="field-priority"
-                                class="w-full bg-white/5 border border-white/10 p-3 text-white outline-none">
+                                class="w-full bg-[#0e0f14] border border-white/10 p-3 text-white outline-none focus:border-[#CAFF00] rounded-md appearance-none">
                                 <option value="alta">🔴 Alta</option>
                                 <option value="media">🟡 Média</option>
                                 <option value="baixa">🟢 Baixa</option>
                             </select>
+                            <!-- Ícone seta -->
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#CAFF00]">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
                         </div>
                     </div>
                     <div class="flex gap-3 pt-4">
@@ -132,7 +140,7 @@
                             class="flex-1 bg-[#CAFF00] text-black font-black py-4 uppercase text-xs">Salvar
                             Objetivo</button>
                         <button type="button" onclick="closeModal()"
-                            class="px-6 border border-white/10 text-white font-black py-4 uppercase text-xs">Sair</button>
+                            class="px-6 border border-white/10 text-white font-black py-4 uppercase text-xs">Cancelar</button>
                     </div>
                 </form>
             </div>

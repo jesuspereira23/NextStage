@@ -374,14 +374,14 @@
           </div>
 
           <!-- Logout -->
-          <form method="POST" action="/logout">
+            <form method="POST" action="/logout" onsubmit="localStorage.removeItem('auth_token')">
             @csrf
             <button type="submit"
-              class="w-full flex items-center justify-center gap-3 border border-white/[0.06] text-zinc-600 font-black text-[11px] uppercase tracking-[0.2em] px-6 py-4 hover:border-red-500/40 hover:text-red-500 transition-all italic">
-              <i class="fas fa-right-from-bracket text-xs"></i>
-              ENCERRAR SESSÃO
+                class="w-full flex items-center justify-center gap-3 border border-white/[0.06] text-zinc-600 font-black text-[11px] uppercase tracking-[0.2em] px-6 py-4 hover:border-red-500/40 hover:text-red-500 transition-all italic">
+                <i class="fas fa-right-from-bracket text-xs"></i>
+                ENCERRAR SESSÃO
             </button>
-          </form>
+            </form>
 
         </div>
       </div>

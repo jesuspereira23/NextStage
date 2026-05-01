@@ -84,12 +84,12 @@
                     <span class="text-[10px] font-bold uppercase tracking-[0.15em] whitespace-nowrap">Guias </span>
                 </a>
 
-                <a href="/exams"
-                    class="flex items-center gap-2 group {{ request()->is('exams*') ? 'text-[#CAFF00]' : 'text-gray-400 hover:text-white' }} transition-all">
+                <a href="/evolution-logs"
+                    class="flex items-center gap-2 group {{ request()->is('evolution-logs*') ? 'text-[#CAFF00]' : 'text-gray-400 hover:text-white' }} transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-２a２ ２ ０ ０１－２ －２z" />
                     </svg>
                     <span class="text-[10px] font-bold uppercase tracking-[0.15em] whitespace-nowrap">Performance</span>
                 </a>
