@@ -323,25 +323,34 @@ function renderExerciseRows() {
     list.innerHTML = exerciseRows
         .map(
             (row) => `
-        <div class="bg-white/5 border border-white/10 p-4 flex flex-col gap-2">
-            <div class="flex justify-between items-center">
-                <input type="text" placeholder="Nome do exercício" value="${row.name ?? ""}"
+        <div class="bg-white/5 border border-white/10 p-4 flex flex-col gap-4 mb-3">
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between items-center">
+                    <label class="text-[10px] text-[#555] uppercase font-bold tracking-widest">Nome do exercício</label>
+                    <button onclick="removeRow(${row._key})" class="text-[#555] hover:text-red-400 text-xs">✕</button>
+                </div>
+                <input type="text" placeholder="Ex: Supino Reto" value="${row.name ?? ""}"
                     onchange="updateRow(${row._key}, 'name', this.value)"
-                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none flex-1 text-white">
-                <button onclick="removeRow(${row._key})" class="text-[#555] hover:text-red-400 ml-3 text-xs">✕</button>
+                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white focus:border-[#CAFF00] transition-colors">
             </div>
-            <div class="grid grid-cols-2 gap-2">
-                <input type="number" placeholder="Sets" value="${row.sets ?? ""}"
-                    onchange="updateRow(${row._key}, 'sets', this.value)"
-                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white">
-                <input type="number" placeholder="Reps" value="${row.reps ?? ""}"
-                    onchange="updateRow(${row._key}, 'reps', this.value)"
-                    class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white">
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-[#555] uppercase font-bold tracking-widest">Sets</label>
+                    <input type="number" placeholder="0" value="${row.sets ?? ""}"
+                        onchange="updateRow(${row._key}, 'sets', this.value)"
+                        class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white focus:border-[#CAFF00] transition-colors">
+                </div>
+                <div class="flex flex-col gap-1">
+                    <label class="text-[10px] text-[#555] uppercase font-bold tracking-widest">Reps</label>
+                    <input type="number" placeholder="0" value="${row.reps ?? ""}"
+                        onchange="updateRow(${row._key}, 'reps', this.value)"
+                        class="bg-transparent border-b border-white/10 text-xs p-1 outline-none text-white focus:border-[#CAFF00] transition-colors">
+                </div>
             </div>
         </div>
-    `,
-        )
-        .join("");
+        `
+        ).join('');
 }
 
 window.updateRow = (key, field, val) => {
