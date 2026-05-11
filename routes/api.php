@@ -27,7 +27,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/me',          [AuthController::class, 'me']);
     Route::post('/logout',     [AuthController::class, 'logout']);
-    Route::post('/onboarding', [OnboardingController::class, 'store']);
 
     Route::apiResource('objectives',    ObjectiveController::class);
     Route::apiResource('workouts',      WorkoutController::class);
