@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\WorkoutController;
 use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\ObjectiveController;
